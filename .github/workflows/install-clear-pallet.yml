@@ -1,0 +1,31 @@
+name: Install Clear Pallet BGM
+on:
+  push:
+    paths:
+      - '.github/workflows/install-clear-pallet.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace generated Web Audio BGM with Clear Pallet MP3
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          start=s.index('function initAudio()')
+          end=s.index('make();', start)
+          new="""const bgm=new Audio('Clear_Pallet.mp3');bgm.loop=true;bgm.preload='auto';bgm.volume=.55;async function toggleBgm(){bgmOn=!bgmOn;if(bgmOn){try{await bgm.play();document.getElementById('sound').textContent='🔊 BGM';toast('Clear Pallet ♪')}catch(e){bgmOn=false;document.getElementById('sound').textContent='🔇 BGM';toast('もう一度BGMを押してね')}}else{bgm.pause();document.getElementById('sound').textContent='🔇 BGM';toast('BGM OFF')}}document.getElementById('sound').onclick=toggleBgm;"""
+          s=s[:start]+new+s[end:]
+          p.write_text(s)
+          PY
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Use Clear Pallet MP3 as puzzle BGM" || exit 0
+          git push
